@@ -52,16 +52,23 @@ namespace SystemInformationTest.SystemInfoReturn
 
                     string FullCpuString = obj["Name"].ToString();
                     string cpuVendor;
+                    string cpuModel;
                     if (FullCpuString.Contains("Intel"))
                     {
                         cpuVendor = "Intel";
+                        Match matchs = Regex.Match(FullCpuString, "((?<=" + cpuVendor + @"...\s)).*$");
+                        cpuModel = matchs.Value.Trim();
+                        cpu.cpuVendor = cpuVendor;
+                        cpu.cpuModel = cpuModel;
                     }
                     else
                     {
                         cpuVendor = "AMD";
-                    }
-                    Match matchs = Regex.Match(FullCpuString, "((?<=" + cpuVendor + @"...\s)).*$");
-                    string cpuModel = matchs.Value;
+                        Match matchs = Regex.Match(FullCpuString, "(?<="+cpuVendor +@").*$");
+                        cpuModel = matchs.Value.Trim();
+                        cpu.cpuVendor = cpuVendor;
+                        cpu.cpuModel = cpuModel;
+                    }                    
                     cpu.cpuVendor = cpuVendor;
                     cpu.cpuModel = cpuModel;
                     cpu.cpuCores = (uint)obj["NumberOfCores"];
@@ -116,7 +123,7 @@ namespace SystemInformationTest.SystemInfoReturn
         private GpuInfo GetGpuInfoObject()
         { 
             GpuInfo gpu = new GpuInfo();            
-            using (var searcher = new ManagementObjectSearcher("select Name,DriverVersion from Win32_VideoController"))
+            using (var searcher = new ManagementObjectSearcher("select Name,DriverVersion,AdapterRAM from Win32_VideoController"))
             {
                 foreach (ManagementObject obj in searcher.Get())
                 {
@@ -132,6 +139,10 @@ namespace SystemInformationTest.SystemInfoReturn
                     {
                         var gpuRAM = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId).GetDeviceProperties(true).TotalMemory;
                         gpu.gpuMemory = Convert.ToUInt64(gpuRAM);
+                    }
+                    else 
+                    {
+                        gpu.gpuMemory = Convert.ToUInt64(obj["AdapterRAM"]);                        
                     }
                 }
             }
